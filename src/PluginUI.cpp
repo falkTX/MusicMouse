@@ -16,9 +16,6 @@ class MusicMouseUI : public UI
 {
     WebViewHandle webview = nullptr;
 
-    // TESTING
-    int idleCycle = 0;
-
 public:
    /**
       UI class constructor.
@@ -32,61 +29,46 @@ public:
 
         WebViewOptions opts;
         opts.initialJS = R"(
-/* TODO this is incomplete!
-// make sure we do not use audio in web context
-class DummyAudioContext {
-    constructor() {
-        this.sampleRate = 48000;
-        this.createBuffer = () => {
-            return new DummyAudioBuffer(this);
-        };
-        this.createBufferSource = () => {
-            return new DummyAudioBufferSourceNode(this);
-        };
-        this.createGain = () => {
-            return new DummyAudioNode(this);
-        };
-    }
+const dpfMidiAccess = {
+    // expose no inputs
+    inputs: new Map(),
+
+    // expose 1 output for sending MIDI through DPF
+    outputs: new Map([
+        ['dpf', {
+            id: 'dpf',
+            name: 'DPF Host',
+            manufacturer: '',
+            version: '',
+            type: 'output',
+            state: 'connected',
+            connection: 'open',
+            onmidimessage: null,
+            onstatechange: null,
+            addEventListener: () => { },
+            removeEventListener: () => { },
+            dispatchEvent: () => { },
+            open: () => { },
+            close: () => { },
+            clear: () => { },
+            send: (data) => {
+                postMessage(JSON.stringify(data));
+            },
+        }],
+    ]),
+
+    // report sysex as enabled
+    sysexEnabled: true,
 };
-class DummyAudioBuffer {
-    constructor(context) {
-        this.context = context;
-        this.numberOfChannels = 0;
-        this.getChannelData = () => {
-            return [];
-        }
-    }
-};
-class DummyAudioNode {
-    constructor(context) {
-        this.context = context;
-        this.numberOfInputs = 0;
-        this.numberOfOutputs = 0;
-        this.gain = {
-            cancelScheduledValues: () => { },
-        };
-    }
-};
-class DummyAudioBufferSourceNode {
-    constructor(context) {
-        this.context = context;
-        this.numberOfInputs = 0;
-        this.numberOfOutputs = 0;
-        this.start = () => { };
-        this.stop = () => { };
-    }
-};
-window.AudioContext = DummyAudioContext;
-*/
-// TODO override WebMIDI and inject dpf postMessage()
-// this is just a test called from C++ code
-function sendTestMIDI() {
-    setTimeout(function() {
-        postMessage("oh hey I am a MIDI message, I swear!");
-    }, 100);
-};
+
+navigator.requestMIDIAccess = () => new Promise((success, reject) => {
+    success(dpfMidiAccess);
+});
+
 )";
-        opts.callback = _webviewMessageCallback;
+        opts.callback = [](void* ptr, char* msg){
+            static_cast<MusicMouseUI*>(ptr)->webviewMessageCallback(msg);
+        };
         opts.callbackPtr = this;
 
         webview = webViewCreate(DISTRHO_PLUGIN_URI,
@@ -115,31 +97,19 @@ protected:
     {
     }
 
-    void uiIdle()
+    void uiIdle() override
     {
         if (webview == nullptr)
             return;
 
         webViewIdle(webview);
-
-        // TESTING
-        if (++idleCycle == 100)
-        {
-            idleCycle = 0;
-            webViewEvaluateJS(webview, "sendTestMIDI()");
-        }
     }
 
 private:
     void webviewMessageCallback(char* msg)
     {
         // TODO receive MIDI through fake WebMIDI here
-        d_stderr(msg);
-    }
-
-    static void _webviewMessageCallback(void* ptr, char* msg)
-    {
-        static_cast<MusicMouseUI*>(ptr)->webviewMessageCallback(msg);
+        d_stderr("got web message: %s", msg);
     }
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MusicMouseUI)
