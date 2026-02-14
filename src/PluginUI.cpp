@@ -25,7 +25,8 @@ public:
         : UI()
     {
         const double scaleFactor = getScaleFactor();
-        setGeometryConstraints(DISTRHO_UI_DEFAULT_WIDTH * scaleFactor, DISTRHO_UI_DEFAULT_HEIGHT * scaleFactor);
+        setGeometryConstraints((DISTRHO_UI_DEFAULT_WIDTH - 200) * scaleFactor,
+                               (DISTRHO_UI_DEFAULT_HEIGHT - 200) * scaleFactor);
 
         WebViewOptions opts;
         opts.initialJS = R"(
@@ -103,6 +104,20 @@ protected:
             return;
 
         webViewIdle(webview);
+    }
+
+    void uiScaleFactorChanged(double scaleFactor) override
+    {
+        if (webview != nullptr)
+            webViewResize(webview, getWidth(), getHeight(), scaleFactor);
+    }
+
+    void onResize(const ResizeEvent& ev) override
+    {
+        if (webview != nullptr)
+            webViewResize(webview, ev.size.getWidth(), ev.size.getHeight(), getScaleFactor());
+
+        UI::onResize(ev);
     }
 
 private:
