@@ -123,8 +123,29 @@ protected:
 private:
     void webviewMessageCallback(char* msg)
     {
-        // TODO receive MIDI through fake WebMIDI here
-        d_stderr("got web message: %s", msg);
+	    if (msg[0] != '[') {
+		    d_stderr("got a strange web message: %s %d", msg, strlen (msg));
+		    return;
+	    }
+	    int commas = 0;
+	    char *p = msg; while (*p) { if (*p == ',') { commas++; } ++p; }
+	    if (commas != 2) {
+		    return;
+	    }
+	    char b[3];
+	    if (sscanf (&msg[1], "%d,%d,%d]", &b[0], &b[1], &b[2]) != 3) {
+		    return;
+	    }
+	    switch (b[0] & 0xf0) {
+	    case 0x90:
+		    sendNote (b[0] & 0xf, b[1] & 0x7f, b[2] & 0x7f);
+		    break;
+	    case 0x80:
+		    sendNote (b[0] & 0xf, b[1] & 0x7f, 0);
+		    break;
+	    default:
+		    break;
+	    }
     }
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MusicMouseUI)
