@@ -78,8 +78,13 @@ protected:
       Run/process function for plugins without MIDI input.
       @note Some parameters might be null if there are no audio inputs or outputs.
     */
-    void run(const float**, float**, uint32_t frames) override
+    void run(const float**, float**, uint32_t, const MidiEvent* midiEvents, uint32_t midiEventCount) override
     {
+        for (uint32_t i = 0; i < midiEventCount; ++i)
+        {
+            if (! writeMidiEvent(midiEvents[i]))
+                break;
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

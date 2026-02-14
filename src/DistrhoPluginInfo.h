@@ -71,7 +71,7 @@
    Whether the plugin wants MIDI input.@n
    This is automatically enabled if @ref DISTRHO_PLUGIN_IS_SYNTH is true.
  */
-#define DISTRHO_PLUGIN_WANT_MIDI_INPUT 0
+#define DISTRHO_PLUGIN_WANT_MIDI_INPUT 1
 
 /**
    Whether the plugin wants MIDI output.
