@@ -53,7 +53,11 @@ const dpfMidiAccess = {
             close: () => { },
             clear: () => { },
             send: (data) => {
-                postMessage(JSON.stringify(data));
+                let encoded = String.fromCharCode(data.length);
+                for (let i = 0; i < data.length; ++i) {
+                    encoded += String.fromCharCode(data[i]);
+                }
+                postMessage(encoded);
             },
         }],
     ]),
@@ -138,29 +142,30 @@ protected:
 private:
     void webviewMessageCallback(char* msg)
     {
-	    if (msg[0] != '[') {
-		    d_stderr("got a strange web message: %s %d", msg, strlen (msg));
-		    return;
-	    }
-	    int commas = 0;
-	    char *p = msg; while (*p) { if (*p == ',') { commas++; } ++p; }
-	    if (commas != 2) {
-		    return;
-	    }
-	    char b[3];
-	    if (sscanf (&msg[1], "%d,%d,%d]", &b[0], &b[1], &b[2]) != 3) {
-		    return;
-	    }
-	    switch (b[0] & 0xf0) {
-	    case 0x90:
-		    sendNote (b[0] & 0xf, b[1] & 0x7f, b[2] & 0x7f);
-		    break;
-	    case 0x80:
-		    sendNote (b[0] & 0xf, b[1] & 0x7f, 0);
-		    break;
-	    default:
-		    break;
-	    }
+        uint8_t* encoded = reinterpret_cast<uint8_t*>(msg);
+
+        const uint8_t len = *encoded++;
+        DISTRHO_SAFE_ASSERT_RETURN(len != 0,);
+
+        if (len != 3)
+            return;
+
+        // FIXME where does this byte come from??
+        encoded++;
+
+        d_debug("got bytes %d %02x %02x %02x", len, encoded[0], encoded[1], encoded[2]);
+
+        switch (encoded[2] & 0xf0)
+        {
+        case 0x90:
+            sendNote(encoded[0] & 0xf, encoded[1] & 0x7f, encoded[2] & 0x7f);
+            break;
+        case 0x80:
+            sendNote(encoded[0] & 0xf, encoded[1] & 0x7f, 0);
+            break;
+        default:
+            break;
+        }
     }
 
     DISTRHO_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MusicMouseUI)
