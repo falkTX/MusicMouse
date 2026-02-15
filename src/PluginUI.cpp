@@ -155,7 +155,7 @@ private:
 
         d_debug("got bytes %d %02x %02x %02x", len, encoded[0], encoded[1], encoded[2]);
 
-        switch (encoded[2] & 0xf0)
+        switch (encoded[0] & 0xf0)
         {
         case 0x90:
             sendNote(encoded[0] & 0xf, encoded[1] & 0x7f, encoded[2] & 0x7f);
