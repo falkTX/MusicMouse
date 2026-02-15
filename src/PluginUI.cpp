@@ -66,6 +66,21 @@ navigator.requestMIDIAccess = () => new Promise((success, reject) => {
     success(dpfMidiAccess);
 });
 
+// workaround pointer-lock not working under macOS and some Linux systems
+delete Document.prototype.pointerLockElement;
+
+Element.prototype.requestPointerLock = function() {
+    const self = this;
+    return new Promise((success, reject) => {
+        document.pointerLockElement = self;
+        success();
+    });
+};
+
+Document.prototype.exitPointerLock = () => {
+    document.pointerLockElement = null;
+};
+
 )";
         opts.callback = [](void* ptr, char* msg){
             static_cast<MusicMouseUI*>(ptr)->webviewMessageCallback(msg);
